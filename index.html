@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Janaan Soalan AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Loader animasi */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-blue-700 mb-2">Penjana Soalan AI Guru</h1>
+            <p class="text-gray-600">Jana soalan kuiz dengan mudah dan muat turun mengikut format yang ditetapkan</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Sidebar / Form -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md border border-gray-100 h-fit">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Butiran Soalan</h2>
+                
+                <form id="questionForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Matapelajaran</label>
+                        <input type="text" id="matapelajaran" required placeholder="Cth: Sains, Matematik, Sejarah" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tajuk</label>
+                        <input type="text" id="tajuk" required placeholder="Cth: Fotosintesis" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tahun Murid</label>
+                        <input type="text" id="tahun" required placeholder="Cth: Tahun 4, Tingkatan 1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tahap Kesukaran</label>
+                        <select id="tahap" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="mudah">Mudah</option>
+                            <option value="sederhana">Sederhana</option>
+                            <option value="susah">Susah</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bilangan Soalan</label>
+                        <input type="number" id="bilangan" required min="1" max="20" value="5" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Muat Naik Bahan Rujukan (Pilihan)</label>
+                        <p class="text-xs text-gray-500 mb-2">Format disokong: Gambar (JPG/PNG) atau Teks (.txt)</p>
+                        <input type="file" id="bahan" accept="image/*,.txt" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+
+                    <button type="submit" id="btnJana" class="w-full mt-4 bg-blue-600 text-white font-semibold py-3 px-4 rounded-md hover:bg-blue-700 transition duration-200 flex items-center justify-center gap-2">
+                        <span>Jana Soalan</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-100 flex flex-col h-full min-h-[500px]">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 class="text-xl font-semibold text-gray-700">Pratonton Soalan</h2>
+                    <button id="btnMuatTurun" class="hidden bg-green-600 text-white text-sm font-medium py-2 px-4 rounded-md hover:bg-green-700 transition duration-200 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Muat Turun Excel (CSV)
+                    </button>
+                </div>
+
+                <!-- Kawasan mesej ralat / maklumat -->
+                <div id="statusMessage" class="hidden mb-4 p-3 rounded-md text-sm"></div>
+
+                <!-- Kawasan jadual data -->
+                <div class="flex-grow overflow-auto relative rounded-md border border-gray-200">
+                    
+                    <div id="loadingOverlay" class="hidden absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-10">
+                        <div class="loader mb-3"></div>
+                        <p class="text-blue-600 font-medium">Sedang menjana soalan dengan AI...</p>
+                    </div>
+
+                    <div id="emptyState" class="absolute inset-0 flex items-center justify-center text-gray-400 p-6 text-center h-full">
+                        <p>Sila isikan butiran di sebelah kiri dan klik "Jana Soalan" untuk memaparkan hasil.</p>
+                    </div>
+
+                    <table id="resultsTable" class="hidden min-w-full divide-y divide-gray-200 text-sm relative">
+                        <thead class="bg-gray-50 sticky top-0 shadow-sm z-0">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Bil</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Zon</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider min-w-[250px]">Soalan</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Pilihan A</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Pilihan B</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Pilihan C</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Pilihan D</th>
+                                <th class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Jawapan Betul (1-4)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Data akan dimuatkan di sini -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let generatedQuestions = [];
+        let currentTajuk = "";
+
+        const form = document.getElementById('questionForm');
+        const emptyState = document.getElementById('emptyState');
+        const resultsTable = document.getElementById('resultsTable');
+        const tableBody = document.getElementById('tableBody');
+        const btnMuatTurun = document.getElementById('btnMuatTurun');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const statusMessage = document.getElementById('statusMessage');
+        const btnJana = document.getElementById('btnJana');
+
+        async function processFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                if (file.type.startsWith('image/')) {
+                    reader.onload = (e) => {
+                        const base64Data = e.target.result.split(',')[1];
+                        resolve({
+                            inlineData: {
+                                data: base64Data,
+                                mimeType: file.type
+                            }
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+                    reader.onload = (e) => {
+                        resolve({
+                            text: e.target.result
+                        });
+                    };
+                    reader.readAsText(file);
+                } else {
+                    reject(new Error("Format fail tidak disokong. Sila muat naik gambar (JPG/PNG) atau fail teks (.txt)."));
+                }
+            });
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                loadingOverlay.classList.remove('hidden');
+                btnJana.disabled = true;
+                btnJana.classList.add('opacity-50', 'cursor-not-allowed');
+                statusMessage.classList.add('hidden');
+            } else {
+                loadingOverlay.classList.add('hidden');
+                btnJana.disabled = false;
+                btnJana.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+            
+            if (isError) {
+                statusMessage.classList.add('bg-red-100', 'text-red-800');
+            } else {
+                statusMessage.classList.add('bg-green-100', 'text-green-800');
+            }
+        }
+
+        async function generateQuestions(formData, filePart) {
+            const systemPrompt = `Anda adalah seorang guru pakar di Malaysia. Tugas anda adalah menjana soalan objektif berbilang pilihan (MCQ). 
+Hasilkan soalan mengikut format yang betul. Pilihan jawapan mestilah 4 (A, B, C, D). 
+Elakkan soalan yang berulang. Pastikan bahasa yang digunakan sesuai dengan tahap umur pelajar berdasarkan 'Tahun/Tingkatan' yang diberikan. 
+Untuk nilai jawapan, sila pastikan ia memulangkan huruf besar A, B, C, atau D.`;
+
+            let userPrompt = `Tolong jana ${formData.bilangan} soalan berformat objektif (A, B, C, D) dengan butiran berikut:
+- Matapelajaran: ${formData.matapelajaran}
+- Tajuk: ${formData.tajuk}
+- Tahun/Tingkatan murid: ${formData.tahun}
+- Tahap Kesukaran: ${formData.tahap}
+`;
+            
+            if (filePart && filePart.text) {
+                userPrompt += `\nSila rujuk bahan teks ini untuk membina soalan:\n${filePart.text}`;
+            } else if (filePart && filePart.inlineData) {
+                userPrompt += `\nSila rujuk gambar yang dilampirkan untuk membina atau mendapatkan konteks soalan.`;
+            }
+
+            const parts = [{ text: userPrompt }];
+            if (filePart && filePart.inlineData) {
+                parts.push(filePart);
+            }
+
+            const payload = {
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ role: "user", parts: parts }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        description: "Senarai soalan kuiz",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                soalan: { type: "STRING", description: "Teks soalan utama" },
+                                pilihan_A: { type: "STRING", description: "Pilihan jawapan A" },
+                                pilihan_B: { type: "STRING", description: "Pilihan jawapan B" },
+                                pilihan_C: { type: "STRING", description: "Pilihan jawapan C" },
+                                pilihan_D: { type: "STRING", description: "Pilihan jawapan D" },
+                                jawapan: { type: "STRING", description: "Huruf jawapan yang betul: A, B, C, atau D" }
+                            },
+                            required: ["soalan", "pilihan_A", "pilihan_B", "pilihan_C", "pilihan_D", "jawapan"]
+                        }
+                    }
+                }
+            };
+
+            const apiKey = "AQ.Ab8RN6K4qPXdDmwgICgK6GUAvSwqBDJgqiFJgcG9Za5hZW8Weg";
+
+            // Menggunakan gemini-3-flash-preview mengikut tetapan persekitaran terbaik
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData?.error?.message || response.statusText;
+                throw new Error(`Ralat API (${response.status}): ${errorMsg}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.candidates && result.candidates.length > 0 && 
+                result.candidates[0].content && result.candidates[0].content.parts.length > 0) {
+                const jsonText = result.candidates[0].content.parts[0].text;
+                let parsedQuestions = JSON.parse(jsonText);
+                return formatQuestionsResult(parsedQuestions);
+            } else {
+                throw new Error("Gagal mendapatkan format jawapan yang dijangkakan daripada AI.");
+            }
+        }
+
+        function formatQuestionsResult(parsedQuestions) {
+            const zonList = ["Zon Hijau", "Zon Biru", "Zon Merah"];
+            const jawapanMap = { "A": "1", "B": "2", "C": "3", "D": "4", "1": "1", "2": "2", "3": "3", "4": "4" };
+            
+            return parsedQuestions.map((q, index) => {
+                let letter = q.jawapan ? q.jawapan.toString().trim().toUpperCase() : "";
+                let numJawapan = jawapanMap[letter] || letter;
+                
+                return {
+                    ...q,
+                    zon: zonList[index % zonList.length],
+                    jawapanNombor: numJawapan
+                };
+            });
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                matapelajaran: document.getElementById('matapelajaran').value,
+                tajuk: document.getElementById('tajuk').value,
+                tahun: document.getElementById('tahun').value,
+                tahap: document.getElementById('tahap').value,
+                bilangan: document.getElementById('bilangan').value,
+            };
+            
+            currentTajuk = formData.tajuk;
+            const fileInput = document.getElementById('bahan');
+            const file = fileInput.files[0];
+
+            setLoading(true);
+            emptyState.classList.add('hidden');
+            resultsTable.classList.add('hidden');
+            btnMuatTurun.classList.add('hidden');
+            tableBody.innerHTML = '';
+
+            try {
+                let filePart = null;
+                if (file) {
+                    filePart = await processFile(file);
+                }
+
+                generatedQuestions = await generateQuestions(formData, filePart);
+                
+                renderTable(generatedQuestions);
+                
+                showStatus(`Berjaya menjana ${generatedQuestions.length} soalan.`);
+                resultsTable.classList.remove('hidden');
+                btnMuatTurun.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Ralat penjanaan:", error);
+                showStatus(error.message || "Berlaku ralat semasa menjana soalan. Sila cuba lagi.", true);
+                emptyState.classList.remove('hidden');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function renderTable(questions) {
+            tableBody.innerHTML = '';
+            questions.forEach((q, index) => {
+                const row = document.createElement('tr');
+                row.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                
+                let zonColorClass = "text-gray-700";
+                if (q.zon === "Zon Hijau") zonColorClass = "text-green-600 font-semibold";
+                else if (q.zon === "Zon Biru") zonColorClass = "text-blue-600 font-semibold";
+                else if (q.zon === "Zon Merah") zonColorClass = "text-red-600 font-semibold";
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-gray-500">${index + 1}</td>
+                    <td class="px-4 py-3 whitespace-nowrap ${zonColorClass}">${escapeHtml(q.zon)}</td>
+                    <td class="px-4 py-3 text-gray-900">${escapeHtml(q.soalan)}</td>
+                    <td class="px-4 py-3 text-gray-700">${escapeHtml(q.pilihan_A)}</td>
+                    <td class="px-4 py-3 text-gray-700">${escapeHtml(q.pilihan_B)}</td>
+                    <td class="px-4 py-3 text-gray-700">${escapeHtml(q.pilihan_C)}</td>
+                    <td class="px-4 py-3 text-gray-700">${escapeHtml(q.pilihan_D)}</td>
+                    <td class="px-4 py-3 text-green-600 font-bold text-center">${escapeHtml(q.jawapanNombor)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function escapeHtml(unsafe) {
+            if(!unsafe) return "";
+            return unsafe.toString()
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        btnMuatTurun.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            
+            if (!generatedQuestions || generatedQuestions.length === 0) {
+                showStatus("Tiada soalan untuk dimuat turun.", true);
+                return;
+            }
+
+            try {
+                const headers = ["Zon", "Soalan", "Pilihan A", "Pilihan B", "Pilihan C", "Pilihan D", "Jawapan Betul (1-4)"];
+                
+                let csvContent = headers.join(',') + '\n';
+
+                generatedQuestions.forEach((q) => {
+                    const row = [
+                        q.zon,
+                        q.soalan,
+                        q.pilihan_A,
+                        q.pilihan_B,
+                        q.pilihan_C,
+                        q.pilihan_D,
+                        q.jawapanNombor
+                    ].map(item => {
+                        let str = (item || '').toString();
+                        // Escape quotes and wrap in double quotes for CSV formatting
+                        str = str.replace(/"/g, '""');
+                        return `"${str}"`;
+                    });
+                    
+                    csvContent += row.join(',') + '\n';
+                });
+
+                // UTF-8 BOM to ensure Excel reads special characters correctly
+                const bom = '\uFEFF'; 
+                const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+                
+                // Complete the cut-off regex safely
+                const safeFileName = (currentTajuk || 'Soalan_Generasi').replace(/[^a-z0-9]/gi, '_');
+                
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${safeFileName}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showStatus(`Berjaya memuat turun ${safeFileName}.csv`);
+
+            } catch (error) {
+                console.error("Ralat muat turun:", error);
+                showStatus("Ralat semasa menyediakan fail muat turun. Sila cuba lagi.", true);
+            }
+        });
+    </script>
+</body>
+</html>
